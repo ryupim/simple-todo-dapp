@@ -11,3 +11,7 @@ REPORT_GAS=true npx hardhat test
 npx hardhat node
 npx hardhat run scripts/deploy.ts
 ```
+
+## 参考サイト
+
+[【Solidity / React】シンプルな dapps を作ってみる](https://zenn.dev/linnefromice/articles/create-simple-dapps-with-hardhat-and-react-ts)
