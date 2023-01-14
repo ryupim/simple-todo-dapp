@@ -12,9 +12,11 @@ type Task = {
 };
 
 const useContent = (contract: ethers.Contract) => {
-    const { taskCount, tasks } = contract.functions;
+    const { taskCount, tasks, createTask, toggleIsCompleted } =
+        contract.functions;
     const [taskContValue, setTaskCountValue] = useState<string>("");
     const [tasksValue, setTasksValue] = useState<Task[]>([]);
+    const [taskContent, setTaskContent] = useState<string>("");
 
     useEffect(() => {
         const getTasks = async () => {
@@ -34,9 +36,28 @@ const useContent = (contract: ethers.Contract) => {
         getTasks();
     }, []);
 
+    const updateTaskContent = (e: React.ChangeEvent<HTMLInputElement>) =>
+        setTaskContent(e.target.value);
+    const requestCreateTask = async () => {
+        if (taskContent === "") return;
+        await createTask(taskContent);
+    };
+
+    const requestToggleIsCompleted = async (id: string) => {
+        for (const _task of tasksValue) {
+            if (id === _task.id) {
+                await toggleIsCompleted(id);
+                return;
+            }
+        }
+    };
+
     return {
         taskCount: taskContValue,
         tasks: tasksValue,
+        updateTaskContent,
+        requestCreateTask,
+        requestToggleIsCompleted,
     };
 };
 
@@ -45,9 +66,29 @@ type ContentProps = {
 };
 
 const Content: FC<ContentProps> = ({ contract }) => {
-    const { taskCount, tasks } = useContent(contract);
+    const {
+        taskCount,
+        tasks,
+        updateTaskContent,
+        requestCreateTask,
+        requestToggleIsCompleted,
+    } = useContent(contract);
+
+    const handleCreateTask = async () => {
+        await requestCreateTask();
+        window.location.reload();
+    };
+
+    const handleToggleIsCompleted = async (id: string) => {
+        await requestToggleIsCompleted(id);
+        window.location.reload();
+    };
     return (
         <div>
+            <p>
+                <input onChange={updateTaskContent} />
+                <button onClick={handleCreateTask}>Create Task</button>
+            </p>
             <p>{`taskCount ... ${taskCount}`}</p>
             <table>
                 <thead>
@@ -65,6 +106,15 @@ const Content: FC<ContentProps> = ({ contract }) => {
                             <td>
                                 {t.isCompleted ? "Completed" : "Not Completed"}
                             </td>
+                            <td>
+                                <button
+                                    onClick={() =>
+                                        handleToggleIsCompleted(t.id)
+                                    }
+                                >
+                                    Change
+                                </button>
+                            </td>
                         </tr>
                     ))}
                 </tbody>
@@ -77,15 +127,19 @@ const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 function App() {
     const provider = new ethers.providers.JsonRpcProvider();
+    const signer = provider.getSigner();
     const contract: ethers.Contract = new ethers.Contract(
         contractAddress,
         artifact.abi,
         provider
     );
+    const contractWithSigner = contract.connect(signer);
+
     return (
         <div>
             <h1>Hello, TodoList Contract.</h1>
-            <Content contract={contract} />
+            {/* <Content contract={contract} /> */}
+            <Content contract={contractWithSigner} />
         </div>
     );
 }
